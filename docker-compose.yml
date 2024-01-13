@@ -10,6 +10,7 @@ services:
     networks:
       serverstatus-network:
         ipv4_address: 172.23.0.2
+        ipv6_address: fd00::2
     volumes:
       - ./server/config.json:/ServerStatus/server/config.json 
       - ./web/json:/usr/share/nginx/html/json
@@ -20,6 +21,27 @@ services:
 networks:
   serverstatus-network:
     name: serverstatus-network
+    enable_ipv6: true
     ipam:
       config:
         - subnet: 172.23.0.0/24
+        - subnet: fd00::/112
+
+# --------------------------------------
+# 使用非本地镜像, cppla/serverstatus:latest
+# ---------------------------------------
+# version: "3"
+# services:
+#   serverstatus:
+#     image: cppla/serverstatus:latest
+#     container_name: serverstatus
+#     restart: unless-stopped
+#     volumes:
+#       - ./config.json:/ServerStatus/server/config.json
+#       - ./monthtraffic:/usr/share/nginx/html/json
+#     ports:
+#       - 8080:80
+#       - 35601:35601
+# networks:
+#   default:
+#     enable_ipv6: true # 注意: 这里简洁的前提是 docker 已配置自动分配ipv6地址

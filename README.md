@@ -24,12 +24,68 @@
 # 部署：
 
 【服务端】：
-```bash
 
+### docker 自定义网络额外添加 ipv6
+> 参考: [Enable IPv6 support](https://docs.docker.com/config/daemon/ipv6/)
+
+1. 编辑 `/etc/docker/daemon.json` 并添加.
+```json
+{
+  "experimental": true,
+  "ip6tables": true
+}
+```
+
+2. 重启 docker `sudo systemctl restart docker`
+3. 自定义 ipv6 `docker network create --ipv6 --subnet fd00::/112 ip6net` 或者 docker compose file:
+```yaml
+ networks:
+   ip6net:
+     enable_ipv6: true
+     ipam:
+       config:
+         - subnet: fd00::/112
+```
+
+### 或者仅为使用默认桥接的网络添加 ipv6
+编辑 `/etc/docker/daemon.json` 并添加.
+```json
+{
+  "ipv6": true,
+  "fixed-cidr-v6": "fd00::/64",
+  "experimental": true,
+  "ip6tables": true
+}
+```
+重启 docker `sudo systemctl restart docker`
+
+### 或者为自定义网络自动分配 ipv6 地址像 ipv4 一样
+编辑 `/etc/docker/daemon.json` 并添加.
+```json
+{
+  "experimental": true,
+  "ip6tables": true,
+  "default-address-pools": [
+    { "base": "172.17.0.0/16", "size": 16 },
+    { "base": "172.18.0.0/16", "size": 16 },
+    { "base": "172.19.0.0/16", "size": 16 },
+    { "base": "172.20.0.0/14", "size": 16 },
+    { "base": "172.24.0.0/14", "size": 16 },
+    { "base": "172.28.0.0/14", "size": 16 },
+    { "base": "192.168.0.0/16", "size": 20 },
+    { "base": "fd00::/104", "size": 112 }
+  ]
+}
+```
+重启 docker `sudo systemctl restart docker`
+> 注意 docker-compose file 需要 `enable_ipv6: true`
+
+```bash
 `Docker`:     
 
 wget --no-check-certificate -qO ~/serverstatus-config.json https://raw.githubusercontent.com/cppla/ServerStatus/master/server/config.json && mkdir ~/serverstatus-monthtraffic    
-docker run -d --restart=always --name=serverstatus -v ~/serverstatus-config.json:/ServerStatus/server/config.json -v ~/serverstatus-monthtraffic:/usr/share/nginx/html/json -p 80:80 -p 35601:35601 cppla/serverstatus:latest     
+docker network create --ipv6 --subnet fd00::/112 serverstatus_net
+docker run -d --restart=always --name=serverstatus -v ~/serverstatus-config.json:/ServerStatus/server/config.json -v ~/serverstatus-monthtraffic:/usr/share/nginx/html/json --network serverstatus_net -p 80:80 -p 35601:35601 cppla/serverstatus:latest     
 
 `Docker-compose(推荐)`: docker-compose up -d
 ```
